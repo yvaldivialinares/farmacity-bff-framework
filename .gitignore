@@ -4,8 +4,6 @@
 *.iws
 *.ipr
 out/
-
-# Cursor (si lo querés ignorar)
 .cursor/
 
 # --- Maven ---
