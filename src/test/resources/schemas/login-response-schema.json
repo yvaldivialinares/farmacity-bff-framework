@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LoginResponse",
+  "description": "Schema for POST /api/v1/login, /api/v1/login/code/validate, /api/v1/login/sso",
+  "type": "object",
+  "required": ["token", "user", "hasTUF"],
+  "properties": {
+    "token": {
+      "type": "string",
+      "minLength": 10,
+      "description": "VTEX authentication token for subsequent requests"
+    },
+    "hasTUF": {
+      "type": "boolean",
+      "description": "Whether the user has a Token Único de Farmacia for prescription access"
+    },
+    "user": {
+      "type": "object",
+      "required": ["name", "lastname", "dni", "email"],
+      "properties": {
+        "name":     { "type": "string", "minLength": 1 },
+        "lastname": { "type": "string", "minLength": 1 },
+        "dni":      { "type": "string", "pattern": "^[0-9]{7,8}$" },
+        "email":    { "type": "string", "minLength": 5 }
+      }
+    }
+  },
+  "additionalProperties": true
+}
