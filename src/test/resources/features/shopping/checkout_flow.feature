@@ -9,7 +9,8 @@ Feature: Shopping Cart and Checkout Flow
 
   @smoke @positive
   Scenario: Create a new shopping cart
-    When the user creates a new shopping cart
+    Given the user has shopping cart creation data
+    When the user creates a new shopping cart with prepared data
     Then the cart is created successfully
 
   @positive

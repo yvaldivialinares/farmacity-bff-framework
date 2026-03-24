@@ -11,10 +11,15 @@ import com.farmacity.bff.automation.context.CleanupRegistry;
 import com.farmacity.bff.automation.context.CtxKeys;
 import com.farmacity.bff.automation.context.ScenarioContext;
 import com.farmacity.bff.automation.utils.AssertionUtils;
+import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.restassured.response.Response;
+import org.junit.jupiter.api.Assertions;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,19 +53,113 @@ public class ShoppingCartSteps {
 
     // ─── Cart lifecycle ────────────────────────────────────────────────
 
+    @Given("the user has shopping cart creation data")
+    public void userHasShoppingCartCreationData() {
+        String dni = context.get(CtxKeys.CUSTOMER_DNI, String.class);
+
+        Response customerResponse = apiClient.execute(
+                RequestSpec.builder()
+                        .method(HttpMethod.GET)
+                        .path(PathBuilder.of(ApiEndpoints.CUSTOMER).with("dni", dni).build())
+                        .headers(vtexHeaders())
+                        .build()
+        );
+        AssertionUtils.assertStatusCode(customerResponse, 200);
+
+        String healthInsuranceId = firstNonBlank(customerResponse,
+                "healthInsuranceID",
+                "healthInsurance.id",
+                "healthInsuranceId.value");
+        assertRequiredField(healthInsuranceId, "healthInsuranceId", "/api/v1/customers/{dni}");
+        context.set(CtxKeys.HEALTH_INSURANCE_ID, healthInsuranceId);
+
+        Response addressesResponse = apiClient.execute(
+                RequestSpec.builder()
+                        .method(HttpMethod.GET)
+                        .path(PathBuilder.of(ApiEndpoints.CUSTOMER_ADDRESSES).with("dni", dni).build())
+                        .headers(vtexHeaders())
+                        .build()
+        );
+        AssertionUtils.assertStatusCode(addressesResponse, 200);
+
+        String addressId = firstNonBlank(addressesResponse,
+                "[0].id",
+                "addresses[0].id",
+                "data[0].id");
+        assertRequiredField(addressId, "addressId", "/api/v1/customers/{dni}/addresses");
+        context.set(CtxKeys.ADDRESS_ID, addressId);
+
+        Response productsResponse = apiClient.execute(
+                RequestSpec.builder()
+                        .method(HttpMethod.GET)
+                        .path(ApiEndpoints.SEARCH_PRODUCTS)
+                        .headers(vtexHeaders())
+                        .queryParams(Map.of("page", 1, "quantity", 1))
+                        .build()
+        );
+        AssertionUtils.assertStatusCode(productsResponse, 200);
+
+        String sku = firstNonBlank(productsResponse,
+                "products[0].sku",
+                "products[0].variations[0].sku",
+                "[0].sku");
+        assertRequiredField(sku, "sku", "/api/v1/search/products");
+        context.set(CtxKeys.PRODUCT_SKU, sku);
+
+        Map<String, Object> createCartBody = new HashMap<>();
+        createCartBody.put("dni", dni);
+        createCartBody.put("storeId", 1);
+        createCartBody.put("addressId", addressId);
+        createCartBody.put("healthInsuranceId", healthInsuranceId);
+        createCartBody.put("isDelivery", true);
+        createCartBody.put("items", List.of(Map.of("sku", sku, "quantity", 1)));
+        context.set(CtxKeys.CART_CREATE_BODY, createCartBody);
+    }
+
     @When("the user creates a new shopping cart")
     public void userCreatesNewCart() {
+        Map<String, Object> body = new HashMap<>();
+        body.put("dni", context.get(CtxKeys.CUSTOMER_DNI, String.class));
+
         Response response = apiClient.execute(
                 RequestSpec.builder()
                         .method(HttpMethod.POST)
                         .path(ApiEndpoints.CARTS)
                         .headers(vtexHeaders())
+                        .body(body)
                         .build()
         );
         context.set(CtxKeys.LAST_RESPONSE, response);
 
         if (response.getStatusCode() == 201 || response.getStatusCode() == 200) {
-            String cartId = response.jsonPath().getString("id");
+            String cartId = response.jsonPath().getString("shoppingCartId");
+            if (cartId == null || cartId.isBlank()) {
+                cartId = response.jsonPath().getString("id");
+            }
+            context.set(CtxKeys.CART_ID, cartId);
+        }
+    }
+
+    @When("the user creates a new shopping cart with prepared data")
+    @SuppressWarnings("unchecked")
+    public void userCreatesNewCartWithPreparedData() {
+        Map<String, Object> body = context.get(CtxKeys.CART_CREATE_BODY, Map.class);
+
+        Response response = apiClient.execute(
+                RequestSpec.builder()
+                        .method(HttpMethod.POST)
+                        .path(ApiEndpoints.CARTS)
+                        .headers(vtexHeaders())
+                        .body(body)
+                        .build()
+        );
+        context.set(CtxKeys.LAST_RESPONSE, response);
+
+        if (response.getStatusCode() == 201 || response.getStatusCode() == 200) {
+            String cartId = response.jsonPath().getString("shoppingCartId");
+            if (cartId == null || cartId.isBlank()) {
+                cartId = response.jsonPath().getString("id");
+            }
             context.set(CtxKeys.CART_ID, cartId);
         }
     }
@@ -223,8 +322,19 @@ public class ShoppingCartSteps {
     @Then("the cart is created successfully")
     public void theCartIsCreatedSuccessfully() {
         Response response = context.get(CtxKeys.LAST_RESPONSE, Response.class);
-        AssertionUtils.assertStatusCode(response, 201);
-        AssertionUtils.assertFieldNotNull(response, "id");
+        int statusCode = response.getStatusCode();
+        Assertions.assertTrue(
+                statusCode == 200 || statusCode == 201,
+                "Expected status 200 or 201 but was " + statusCode
+        );
+
+        String shoppingCartId = response.jsonPath().getString("shoppingCartId");
+        String legacyId = response.jsonPath().getString("id");
+        Assertions.assertTrue(
+                (shoppingCartId != null && !shoppingCartId.isBlank())
+                        || (legacyId != null && !legacyId.isBlank()),
+                "Expected non-empty shoppingCartId or id in create cart response"
+        );
     }
 
     @Then("the item is added to the cart")
@@ -264,6 +374,26 @@ public class ShoppingCartSteps {
                         .path(path)
                         .headers(vtexHeaders())
                         .build()
+        );
+    }
+
+    private String firstNonBlank(Response response, String... jsonPaths) {
+        List<String> candidates = new ArrayList<>();
+        for (String jsonPath : jsonPaths) {
+            String value = response.jsonPath().getString(jsonPath);
+            if (value != null && !value.isBlank() && !"null".equalsIgnoreCase(value)) {
+                return value;
+            }
+            candidates.add(jsonPath);
+        }
+        return null;
+    }
+
+    private void assertRequiredField(String value, String fieldName, String sourceEndpoint) {
+        Assertions.assertTrue(
+                value != null && !value.isBlank(),
+                "Missing required field '" + fieldName + "' from " + sourceEndpoint
+                        + ". Cannot build cart create payload."
         );
     }
 

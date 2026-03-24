@@ -15,6 +15,7 @@ public final class CtxKeys {
     // ─── Customer ─────────────────────────────────────────────────────
     public static final String CUSTOMER_DNI     = "customer.dni";
     public static final String CUSTOMER_EMAIL   = "customer.email";
+    public static final String HEALTH_INSURANCE_ID = "customer.healthInsuranceId";
     public static final String ADDRESS_ID       = "address.id";
     public static final String FAVORITE_SKU     = "favorite.sku";
 
@@ -25,6 +26,7 @@ public final class CtxKeys {
 
     // ─── Catalog ──────────────────────────────────────────────────────
     public static final String PRODUCT_SKU      = "product.sku";
+    public static final String CART_CREATE_BODY = "cart.create.body";
 
     // ─── Stores ───────────────────────────────────────────────────────
     public static final String CHECKIN_ID       = "checkin.id";

@@ -6,13 +6,13 @@ Feature: Login with Email and Password
 
   @smoke @positive
   Scenario: Successful login with valid credentials returns token
-    When the user logs in with email "test404Vic@yopmail.com" and password "Farmacity2"
+    When the user logs in with email "test405Vic@yopmail.com" and password "Farmacity2"
     Then the response status code is 200
     And the login response contains a valid token
 
   @smoke @positive
   Scenario: Token obtained from login can be used for authenticated requests
-    When the user logs in with email "test404Vic@yopmail.com" and password "Farmacity2"
+    When the user logs in with email "test405Vic@yopmail.com" and password "Farmacity2"
     Then the response status code is 200
     And the token is stored for subsequent requests
     When I send a GET request to "/api/v1.0/healthinsurances"
