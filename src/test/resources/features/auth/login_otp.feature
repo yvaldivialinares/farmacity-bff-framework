@@ -22,7 +22,9 @@ Feature: Login with OTP Code
     Then the response status code is 401
     And the response matches the error schema with status 401
 
-  @smoke @positive
+  @smoke @positive @wip
+  #TODO:  Revisar estrategia para no bloquear un user real con intentos fallidos de OTP validation.
+  # Posible solución: usar un email de prueba dedicado para este escenario, o mockear la validación de OTP.
   Scenario: Password recovery request accepted for registered email
     When the user initiates password recovery for email "test404Vic@yopmail.com"
     Then the response status code is 200
