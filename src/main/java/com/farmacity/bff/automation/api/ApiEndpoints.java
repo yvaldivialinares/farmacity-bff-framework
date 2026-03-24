@@ -33,6 +33,8 @@ public final class ApiEndpoints {
     public static final String CUSTOMER_ADDRESS_DEFAULT   = "/api/v1/customers/{dni}/addresses/{id}/default";
     public static final String CUSTOMER_FAVORITES         = "/api/v1/customers/{dni}/favorites";
     public static final String CUSTOMER_FAVORITE          = "/api/v1/customers/{dni}/favorites/{sku}";
+    /** Wishlist by email (Swagger V1: GET/POST /api/v1/favorites-list/{emailAddress}) */
+    public static final String FAVORITES_LIST             = "/api/v1/favorites-list/{emailAddress}";
     public static final String HEALTH_INSURANCES          = "/api/v1/health-insurances";
 
     // ─── Shopping Carts ────────────────────────────────────────────────

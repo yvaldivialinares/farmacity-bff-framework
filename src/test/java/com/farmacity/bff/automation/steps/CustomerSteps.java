@@ -173,8 +173,9 @@ public class CustomerSteps {
 
     @When("the user retrieves their favorites")
     public void userRetrievesFavorites() {
-        String path = PathBuilder.of(ApiEndpoints.CUSTOMER_FAVORITES)
-                .with("dni", context.get(CtxKeys.CUSTOMER_DNI, String.class))
+        String email = context.get(CtxKeys.CUSTOMER_EMAIL, String.class);
+        String path = PathBuilder.of(ApiEndpoints.FAVORITES_LIST)
+                .with("emailAddress", email)
                 .build();
         Response response = apiClient.execute(
                 RequestSpec.builder()
