@@ -26,5 +26,5 @@ import static io.cucumber.junit.platform.engine.Constants.*;
 )
 @ConfigurationParameter(key = FEATURES_PROPERTY_NAME,    value = "src/test/resources/features")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME,        value = "com.farmacity.bff.automation")
-@ConfigurationParameter(key = FILTER_TAGS_PROPERTY_NAME, value = "@smoke")
+@ConfigurationParameter(key = FILTER_TAGS_PROPERTY_NAME, value = "@smoke and not @wip")
 public class SmokeTestRunner {}
